@@ -39,3 +39,14 @@ header {
   font-size: 16px;
   margin: 0 0 10px 0;
 }
+
+#load-more {
+  padding: 10px 20px;
+  font-size: 16px;
+  background-color: #333;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 20px;
+}

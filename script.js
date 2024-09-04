@@ -19,13 +19,21 @@ class Api {
 
 const api = new Api('e52fda134110945256469ed2ec1cb4fe');
 
-function renderMovies(movies, resultsContainer, totalResults) {
-    resultsContainer.innerHTML = '';
+let currentQuery = '';
+let currentPage = 1;
+let totalPages = 1;
+
+function renderMovies(movies, resultsContainer, totalResults, append = false) {
+    if (!append) {
+        resultsContainer.innerHTML = '';
+    }
 
     if (movies.length > 0) {
-        const resultsHeader = document.createElement('h3');
-        resultsHeader.textContent = `Results (${totalResults})`;
-        resultsContainer.appendChild(resultsHeader);
+        if (!append) {
+            const resultsHeader = document.createElement('h3');
+            resultsHeader.textContent = `Results (${totalResults})`;
+            resultsContainer.appendChild(resultsHeader);
+        }
 
         movies.forEach(movie => {
             const movieItem = document.createElement('div');
@@ -38,22 +46,54 @@ function renderMovies(movies, resultsContainer, totalResults) {
             resultsContainer.appendChild(movieItem);
         });
     } else {
-        resultsContainer.textContent = `No results for "${query}"`;
+        resultsContainer.textContent = `No results for "${currentQuery}"`;
+    }
+}
+
+async function handleSearch(query) {
+    const data = await api.fetchMoviesBySearchText(query);
+    currentQuery = query;
+    currentPage = 1;
+    totalPages = data.total_pages;
+
+    const resultsContainer = document.getElementById('search-results');
+    renderMovies(data.results, resultsContainer, data.total_results);
+
+    if (currentPage < totalPages) {
+        document.getElementById('load-more').style.display = 'block';
+    } else {
+        document.getElementById('load-more').style.display = 'none';
+    }
+}
+
+async function loadMoreMovies() {
+    currentPage += 1;
+    const data = await api.fetchMoviesBySearchText(currentQuery, currentPage);
+
+    const resultsContainer = document.getElementById('search-results');
+    renderMovies(data.results, resultsContainer, data.total_results, true);
+
+    if (currentPage >= totalPages) {
+        document.getElementById('load-more').style.display = 'none';
     }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('search-input');
+    const loadMoreButton = document.getElementById('load-more');
     const resultsContainer = document.getElementById('search-results');
 
     searchInput.addEventListener('keyup', async (event) => {
         if (event.key === 'Enter') {
             const query = searchInput.value.trim();
             if (query) {
-                const data = await api.fetchMoviesBySearchText(query);
-                renderMovies(data.results, resultsContainer, data.total_results);
+                await handleSearch(query);
             }
-            searchInput.value = ''; // Очищаємо інпут
+            searchInput.value = '';
         }
+    });
+
+    loadMoreButton.addEventListener('click', async () => {
+        await loadMoreMovies();
     });
 });
